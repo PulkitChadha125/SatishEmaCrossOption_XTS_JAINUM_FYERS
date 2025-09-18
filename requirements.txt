@@ -1,0 +1,40 @@
+# Core data analysis and manipulation
+pandas>=1.5.0
+numpy>=1.21.0
+
+# API and HTTP requests
+requests>=2.28.0
+
+# Fyers API integration
+fyers-apiv3>=2.0.0
+
+# WebSocket and real-time communication
+python-socketio>=5.8.0
+
+# Date and time handling
+pytz>=2022.1
+
+# TOTP for two-factor authentication
+pyotp>=2.8.0
+
+# Configuration file parsing
+configparser>=5.3.0
+
+# Dataframe library and TA helpers used in MAIN.PY
+polars>=1.5.0
+# TA helpers extension for Polars (exposes .ta)
+polars-ta==0.5.12
+
+# Standard library modules (included with Python)
+# datetime - built-in
+# json - built-in
+# time - built-in
+# traceback - built-in
+# sys - built-in
+# threading - built-in
+# os - built-in
+# math - built-in
+# warnings - built-in
+# webbrowser - built-in
+# urllib.parse - built-in
+# logging - built-in
