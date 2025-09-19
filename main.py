@@ -690,6 +690,9 @@ def main_strategy():
                 params["StoplossValue"] = params["FyersFutLtp"] - (params["FyersFutLtp"] * params["StopLoss"] / 100)
                 params["TargetValue"] = params["FyersFutLtp"] + (params["FyersFutLtp"] * params["Target"] / 100)
                 params["CandleTimestamp"] = lastcandletime
+                message = f"{TIMESTAMP} [ENTRY] Buy in future Contract {params['Symbol']} {params['FyersFutLtp']} "
+                print(message)
+                write_to_order_logs(message)
                 
                 if params["PlacementType"] == "FUTURETOOPTION":
                     
@@ -844,6 +847,10 @@ def main_strategy():
                 params["StoplossValue"] = params["FyersFutLtp"] + (params["FyersFutLtp"] * params["StopLoss"] / 100)
                 params["TargetValue"] = params["FyersFutLtp"] - (params["FyersFutLtp"] * params["Target"] / 100)
                 params["CandleTimestamp"] = lastcandletime
+
+                message = f"{TIMESTAMP} [ENTRY] Sell in future Contract {params['Symbol']} {params['FyersFutLtp']} "
+                print(message)
+                write_to_order_logs(message)
                 
                 if params["PlacementType"] == "FUTURETOOPTION":
                     if params["Flexiblity"]=="PREMIUMBUY":
@@ -994,6 +1001,9 @@ def main_strategy():
                     params["Trade"] =None
                     params["StoplossValue"] = None
                     params["TargetValue"] = None
+                    message = f"{TIMESTAMP} [EXIT] Target reached {params['Symbol']} {params['FyersFutLtp']} "
+                    print(message)
+                    write_to_order_logs(message)
                     if params["PlacementType"] == "FUTURETOOPTION":
                         
                         if params["Flexiblity"]=="PREMIUMBUY":
@@ -1031,6 +1041,9 @@ def main_strategy():
                     params["Trade"] =None
                     params["StoplossValue"] = None
                     params["TargetValue"] = None
+                    message = f"{TIMESTAMP} [EXIT] Stoploss reached {params['Symbol']} {params['FyersFutLtp']} "
+                    print(message)
+                    write_to_order_logs(message)
                     if params["PlacementType"] == "FUTURETOOPTION":
                         if params["Flexiblity"]=="PREMIUMBUY":
                             place_order(nfo_ins_id=params["Ce_Contract_Token"],symbol=params["ce_contract"],order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["Ce_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
@@ -1069,6 +1082,9 @@ def main_strategy():
                     params["Trade"] =None
                     params["StoplossValue"] = None
                     params["TargetValue"] = None
+                    message = f"{TIMESTAMP} [EXIT] Target reached {params['Symbol']} {params['FyersFutLtp']} "
+                    print(message)
+                    write_to_order_logs(message)
                     if params["PlacementType"] == "FUTURETOOPTION":
                         
                         if params["Flexiblity"]=="PREMIUMBUY":
@@ -1104,6 +1120,9 @@ def main_strategy():
                     params["Trade"] =None
                     params["StoplossValue"] = None
                     params["TargetValue"] = None
+                    message = f"{TIMESTAMP} [EXIT] Stoploss reached {params['Symbol']} {params['FyersFutLtp']} "
+                    print(message)
+                    write_to_order_logs(message)
                     if params["PlacementType"] == "FUTURETOOPTION":
                         if params["Flexiblity"]=="PREMIUMBUY":
                             place_order(nfo_ins_id=params["Pe_Contract_Token"],symbol=params["pe_contract"],order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["Pe_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
