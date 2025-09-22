@@ -304,9 +304,9 @@ def get_user_settings():
                 "PlacementType": row['PlacementType'],
                 "StrikeStep": row['StrikeStep'],
                 "Trade":None,
-                "StopLoss":row['StopLoss'],
+                "StopLoss":float(row['StopLoss']),
                 "StoplossValue":None,
-                "Target":row['Target'],
+                "Target":float(row['Target']),
                 "TargetValue":None,
                 "SquareOffExecuted":False,
                 # "NSEFOexchangeInstrumentID": NSEFOinstrument_id,
@@ -567,9 +567,11 @@ def main_strategy():
                 f"   Stoploss Value  : {params.get('StoplossValue')}\n"
                 f"   Target Value    : {params.get('TargetValue')}\n"
                 f"   Entry Price     : {params.get('EntryPrice') if params.get('EntryPrice') else 'NA'}\n"
+                f"   Stoploss        : {params.get('StopLoss')}\n"
+                f"   Target          : {params.get('Target')}\n"
                 # f"   PnL (approx)    : "
                 # f"{round((params['FyersFutLtp'] - params['EntryPrice']) * params['Quantity'], 2) if params.get('EntryPrice') and params.get('FyersFutLtp') else 'NA'}\n"
-                f"   Start Time      : {params.get('StartTime')} | Stop Time: {params.get('Stoptime')} | SquareOff: {params.get('SquareOffExecuted')}\n"
+                f"   Start Time      : {params.get('StartTime')} | Stop Time: {params.get('StopTime')} | SquareOff: {params.get('SquareOffExecuted')}\n"
             )
 
 
@@ -687,8 +689,14 @@ def main_strategy():
                  params["CandleTimestamp"] != lastcandletime
                 ):
 
-                params["StoplossValue"] = params["FyersFutLtp"] - (params["FyersFutLtp"] * params["StopLoss"] / 100)
-                params["TargetValue"] = params["FyersFutLtp"] + (params["FyersFutLtp"] * params["Target"] / 100)
+                params["StoplossValue"] = (
+                    params["FyersFutLtp"] - (params["FyersFutLtp"] * params["StopLoss"] / 100.0)
+                    if params.get("FyersFutLtp") is not None else None
+                )
+                params["TargetValue"] = (
+                    params["FyersFutLtp"] + (params["FyersFutLtp"] * params["Target"] / 100.0)
+                    if params.get("FyersFutLtp") is not None else None
+                )
                 params["CandleTimestamp"] = lastcandletime
                 message = f"{TIMESTAMP} [ENTRY] Buy in future Contract {params['Symbol']} {params['FyersFutLtp']} "
                 print(message)
@@ -844,8 +852,14 @@ def main_strategy():
                  params["CandleTimestamp"] != lastcandletime
                 ):
                 
-                params["StoplossValue"] = params["FyersFutLtp"] + (params["FyersFutLtp"] * params["StopLoss"] / 100)
-                params["TargetValue"] = params["FyersFutLtp"] - (params["FyersFutLtp"] * params["Target"] / 100)
+                params["StoplossValue"] = (
+                    params["FyersFutLtp"] + (params["FyersFutLtp"] * params["StopLoss"] / 100.0)
+                    if params.get("FyersFutLtp") is not None else None
+                )
+                params["TargetValue"] = (
+                    params["FyersFutLtp"] - (params["FyersFutLtp"] * params["Target"] / 100.0)
+                    if params.get("FyersFutLtp") is not None else None
+                )
                 params["CandleTimestamp"] = lastcandletime
 
                 message = f"{TIMESTAMP} [ENTRY] Sell in future Contract {params['Symbol']} {params['FyersFutLtp']} "
