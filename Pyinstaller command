@@ -1,2 +1,6 @@
 pyinstaller --onefile main.py --add-data "TradeSettings.csv;." --add-data "Credentials.csv;." --add-data "xtspythonclientapisdk;xtspythonclientapisdk" --add-data "xtspythonclientapisdk/config.ini;xtspythonclientapisdk" --add-data ".venv\Lib\site-packages\fyers_apiv3\FyersWebsocket\map.json;fyers_apiv3\FyersWebsocket" --hidden-import=xtspythonclientapisdk --hidden-import=xtspythonclientapisdk.Connect --hidden-import=configparser --hidden-import=requests --hidden-import=urllib3 --hidden-import=fyers_apiv3
 
+
+
+new command
+pyinstaller --onefile main.py --add-data "TradeSettings.csv;." --add-data "Credentials.csv;." --add-data "FyersCredentials.csv;." --add-data "xtspythonclientapisdk;xtspythonclientapisdk" --add-data "xtspythonclientapisdk/config.ini;xtspythonclientapisdk" --add-data ".venv\Lib\site-packages\fyers_apiv3\FyersWebsocket\map.json;fyers_apiv3\FyersWebsocket" --hidden-import=xtspythonclientapisdk --hidden-import=xtspythonclientapisdk.Connect --hidden-import=configparser --hidden-import=requests --hidden-import=urllib3 --hidden-import=fyers_apiv3

@@ -9,8 +9,6 @@ import time
 import traceback
 import sys
 import math
-from http.server import BaseHTTPRequestHandler, HTTPServer
-import threading as _threading
 
 # Ensure the SDK path is included for import
 sys.path.append('.')
@@ -25,10 +23,6 @@ xts_marketdata = None
 xt=None
 Future_instrument_id_list=[]
 Equity_instrument_id_list=[]
-
-# Shared net positions for dashboard
-net_positions = []
-_netpos_lock = _threading.Lock()
 
 
 def normalize_to_step(price, step):
@@ -461,149 +455,6 @@ def login_marketdata_api():
 def write_to_order_logs(message):
     with open('OrderLog.txt', 'a') as file:  # Open the file in append mode
         file.write(message + '\n')
-
-def fetch_net_positions():
-    """
-    Fetch net positions from XTS API and update the global net_positions list.
-    This function is called periodically in a background thread.
-    """
-    global net_positions, xt
-    try:
-        if xt:
-            response = xt.get_position_netwise(clientID="CLI4342")
-            print("Net Posresponse: ", response)
-            if response and response.get('type') == 'success':
-                result = response.get('result', {})
-                positions_data = result.get('positionList', [])
-                valid_positions = []
-                for pos in positions_data:
-                    if pos and pos != 0 and pos != "" and isinstance(pos, dict):
-                        valid_positions.append(pos)
-                try:
-                    print(f"[NetPositions] fetched count: {len(valid_positions)}")
-                    if valid_positions:
-                        print("[NetPositions] sample position:")
-                        print(json.dumps(valid_positions[0], indent=2))
-                except Exception:
-                    pass
-                with _netpos_lock:
-                    net_positions = valid_positions
-        # Silently ignore when xt not available or any other non-success
-    except Exception:
-        # Silently handle exceptions
-        pass
-
-def _start_net_positions_fetcher(poll_seconds: int = 2) -> None:
-    def _loop():
-        while True:
-            fetch_net_positions()
-            time.sleep(poll_seconds)
-    t = _threading.Thread(target=_loop, name="NetPositionsFetcher", daemon=True)
-    t.start()
-
-class _DashboardHandler(BaseHTTPRequestHandler):
-    def _send_json(self, obj, code=200):
-        try:
-            payload = json.dumps(obj).encode('utf-8')
-        except Exception:
-            payload = b"{}"
-        self.send_response(code)
-        self.send_header('Content-Type', 'application/json; charset=utf-8')
-        self.send_header('Content-Length', str(len(payload)))
-        self.end_headers()
-        self.wfile.write(payload)
-
-    def _send_html(self, html: str, code=200):
-        data = html.encode('utf-8')
-        self.send_response(code)
-        self.send_header('Content-Type', 'text/html; charset=utf-8')
-        self.send_header('Content-Length', str(len(data)))
-        self.end_headers()
-        self.wfile.write(data)
-
-    def do_GET(self):
-        if self.path.startswith('/api/net-positions'):
-            with _netpos_lock:
-                positions_snapshot = list(net_positions)
-            self._send_json({
-                "updatedAt": datetime.now().isoformat(),
-                "positions": positions_snapshot
-            })
-            return
-        if self.path == '/' or self.path.startswith('/index.html'):
-            html = (
-                """
-                <!doctype html>
-                <html>
-                <head>
-                  <meta charset=\"utf-8\" />
-                  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
-                  <title>Net Positions Dashboard</title>
-                  <style>
-                    body { font-family: Arial, sans-serif; margin: 16px; }
-                    table { border-collapse: collapse; width: 100%; }
-                    th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }
-                    th { background: #f5f5f5; }
-                    caption { text-align: left; font-weight: bold; margin-bottom: 8px; }
-                    .meta { margin-bottom: 12px; color: #555; }
-                  </style>
-                </head>
-                <body>
-                  <h2>Net Positions</h2>
-                  <div class=\"meta\">Auto-refreshing every 2s. Endpoint: <code>/api/net-positions</code></div>
-                  <table>
-                    <thead id=\"thead\"></thead>
-                    <tbody id=\"tbody\"></tbody>
-                  </table>
-                  <script>
-                    async function refresh() {
-                      try {
-                        const res = await fetch('/api/net-positions');
-                        const data = await res.json();
-                        const rows = data.positions || [];
-                        const tbody = document.getElementById('tbody');
-                        const thead = document.getElementById('thead');
-                        tbody.innerHTML = '';
-                        if (rows.length > 0) {
-                          const columns = Object.keys(rows[0]);
-                          thead.innerHTML = '<tr>' + columns.map(c => `<th>${c}</th>`).join('') + '</tr>';
-                          for (const r of rows) {
-                            const tr = document.createElement('tr');
-                            for (const c of columns) {
-                              const td = document.createElement('td');
-                              td.textContent = r[c] == null ? '' : String(r[c]);
-                              tr.appendChild(td);
-                            }
-                            tbody.appendChild(tr);
-                          }
-                        } else {
-                          thead.innerHTML = '<tr><th>No data</th></tr>';
-                          tbody.innerHTML = '';
-                        }
-                      } catch (e) {
-                        // ignore
-                      }
-                    }
-                    refresh();
-                    setInterval(refresh, 2000);
-                  </script>
-                </body>
-                </html>
-                """
-            )
-            self._send_html(html)
-            return
-        self.send_error(404)
-
-def _start_dashboard_server(host: str = '127.0.0.1', port: int = 8000) -> None:
-    def _serve():
-        httpd = HTTPServer((host, port), _DashboardHandler)
-        try:
-            httpd.serve_forever()
-        finally:
-            httpd.server_close()
-    t = _threading.Thread(target=_serve, name=f"DashboardServer:{host}:{port}", daemon=True)
-    t.start()
 
 def main_strategy():
     try:
@@ -1346,18 +1197,6 @@ if __name__ == "__main__":
     # Initialize Market Data API
     fyres_websocket(FyerSymbolList)
     time.sleep(5)
-    
-    # Start dashboard and net positions fetcher (non-blocking)
-    try:
-        _start_dashboard_server(host='127.0.0.1', port=8000)
-        print("Dashboard running at http://127.0.0.1:8000/")
-    except Exception as _e:
-        print("Dashboard failed to start:", _e)
-    try:
-        _start_net_positions_fetcher(poll_seconds=2)
-        print("Net positions fetcher started (2s interval)")
-    except Exception as _e:
-        print("Net positions fetcher failed to start:", _e)
     
     while True:
         now =   datetime.now()   
