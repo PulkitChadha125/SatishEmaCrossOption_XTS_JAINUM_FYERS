@@ -1,0 +1,18 @@
+Trade settings explaination
+
+Symbol= Main symbol (NIFTY,BANKNIFTY,SBIN,ACC, Iin short ticker name index name )
+Expiery = Monthy expiery to be given to fecth future data
+Quantity : Number of lots to be taken on entry 
+FyersTf = Time frames in min (3 means 3 mins)
+Ma1= Fast moving average period
+MA2: slow moving average period
+starttime: start time of strategy confiureable by symbol
+stop time: stop time of strategy confiureable by symbol
+Placement type:
+FUTURETOFUTURE = buy cross take buy position in future , sell cross take sell position in future 
+FUTURETOOPTION
+A.PREMIUMBUY:on buy signal  CE buy and when sell comes exit CE buy PE
+B.PREMIUMSELL:on buy signal PE SELL AND WHEN SELL COMES EXIT PE SELL AND ENTRY CE SELL 
+C.SYNTHETIC:on buy signal  CE buy PE SELL AND WHEN SELL COMES CE SELL PE buy. exit previous 
+
+Stoploss and target are calculated based on points 

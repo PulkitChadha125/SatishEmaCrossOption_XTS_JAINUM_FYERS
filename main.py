@@ -132,8 +132,8 @@ def place_order(nfo_ins_id,order_quantity,order_side,price,unique_key,symbol,tic
         clientID="*****" )
 
         print("Place Order: ", response)
-        write_to_order_logs(f"Broker Order Response: [{datetime.now()}] {symbol} {order_side} quantity: {order_quantity} price: {price} response: {response}")
-        print("-" * 50) 
+        # write_to_order_logs(f"Broker Order Response: [{datetime.now()}] {symbol} {order_side} quantity: {order_quantity} price: {price} response: {response}")
+        # print("-" * 50) 
     except Exception as e:
         print(f"Error placing order: {str(e)}")
         write_to_order_logs(f"Error placing order {symbol} {order_side} quantity: {order_quantity} price: {price} error: {str(e)}")
@@ -311,6 +311,9 @@ def get_user_settings():
                 "StrikeStep": row['StrikeStep'],
                 "Trade":None,
                 "StopLoss":float(row['StopLoss']),
+                # Back-compat: many strategy blocks reference 'Stoploss' (lowercase l)
+                # so we duplicate the numeric value to that key to avoid KeyError
+                "Stoploss":float(row['StopLoss']),
                 "StoplossValue":None,
                 "Target":float(row['Target']),
                 "TargetValue":None,
@@ -470,8 +473,8 @@ def fetch_net_positions():
     global net_positions, xt
     try:
         if xt:
-            response = xt.get_position_netwise(clientID="CLI4342")
-            print("Net Posresponse: ", response)
+            response = xt.get_position_netwise(clientID="*****")
+            
             if response and response.get('type') == 'success':
                 result = response.get('result', {})
                 positions_data = result.get('positionList', [])
@@ -479,13 +482,6 @@ def fetch_net_positions():
                 for pos in positions_data:
                     if pos and pos != 0 and pos != "" and isinstance(pos, dict):
                         valid_positions.append(pos)
-                try:
-                    print(f"[NetPositions] fetched count: {len(valid_positions)}")
-                    if valid_positions:
-                        print("[NetPositions] sample position:")
-                        print(json.dumps(valid_positions[0], indent=2))
-                except Exception:
-                    pass
                 with _netpos_lock:
                     net_positions = valid_positions
         # Silently ignore when xt not available or any other non-success
@@ -521,6 +517,33 @@ class _DashboardHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def do_POST(self):
+        if self.path == '/api/exit-position':
+            try:
+                content_length = int(self.headers['Content-Length'])
+                post_data = self.rfile.read(content_length)
+                data = json.loads(post_data.decode('utf-8'))
+                
+                symbol = data.get('symbol', '')
+                net_qty = data.get('netQty', 0)
+                exchange_instrument_id = data.get('exchangeInstrumentId', 0)
+                tick_size = data.get('tickSize', 0.05)
+                
+                if net_qty > 0:
+                    # Long position - place sell order
+                    place_order(nfo_ins_id=exchange_instrument_id, symbol=symbol, order_quantity=abs(net_qty), 
+                              order_side="SELL", price=get_bid(exchange_instrument_id), unique_key=None, ticksize=tick_size)
+                elif net_qty < 0:
+                    # Short position - place buy order
+                    place_order(nfo_ins_id=exchange_instrument_id, symbol=symbol, order_quantity=abs(net_qty), 
+                              order_side="BUY", price=get_ask(exchange_instrument_id), unique_key=None, ticksize=tick_size)
+                
+                self._send_json({"status": "success", "message": f"Exit order placed for {symbol}"})
+            except Exception as e:
+                self._send_json({"status": "error", "message": str(e)}, 500)
+            return
+        self.send_error(404)
+
     def do_GET(self):
         if self.path.startswith('/api/net-positions'):
             with _netpos_lock:
@@ -540,21 +563,175 @@ class _DashboardHandler(BaseHTTPRequestHandler):
                   <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
                   <title>Net Positions Dashboard</title>
                   <style>
-                    body { font-family: Arial, sans-serif; margin: 16px; }
-                    table { border-collapse: collapse; width: 100%; }
-                    th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }
-                    th { background: #f5f5f5; }
-                    caption { text-align: left; font-weight: bold; margin-bottom: 8px; }
-                    .meta { margin-bottom: 12px; color: #555; }
+                    * { margin: 0; padding: 0; box-sizing: border-box; }
+                    body { 
+                      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                      background: linear-gradient(135deg, #2E8B57 0%, #20B2AA 100%);
+                      min-height: 100vh;
+                      padding: 20px;
+                    }
+                    .container {
+                      max-width: 1200px;
+                      margin: 0 auto;
+                      background: white;
+                      border-radius: 15px;
+                      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                      overflow: hidden;
+                    }
+                    .header {
+                      background: linear-gradient(135deg, #2E8B57, #20B2AA);
+                      color: white;
+                      padding: 25px;
+                      text-align: center;
+                    }
+                    .header h1 {
+                      font-size: 2.5em;
+                      margin-bottom: 10px;
+                      font-weight: 300;
+                    }
+                    .header p {
+                      opacity: 0.9;
+                      font-size: 1.1em;
+                    }
+                    .meta {
+                      padding: 20px 25px;
+                      background: #f8f9fa;
+                      border-bottom: 1px solid #e9ecef;
+                      color: #6c757d;
+                      font-size: 0.95em;
+                    }
+                    .table-container {
+                      overflow-x: auto;
+                      padding: 0;
+                    }
+                    table {
+                      width: 100%;
+                      border-collapse: collapse;
+                      font-size: 14px;
+                    }
+                    th {
+                      background: linear-gradient(135deg, #2E8B57, #20B2AA);
+                      color: white;
+                      padding: 15px 12px;
+                      text-align: left;
+                      font-weight: 600;
+                      text-transform: uppercase;
+                      letter-spacing: 0.5px;
+                    }
+                    td {
+                      padding: 15px 12px;
+                      border-bottom: 1px solid #e9ecef;
+                      vertical-align: middle;
+                    }
+                    tr:hover {
+                      background: #f8f9fa;
+                    }
+                    .symbol {
+                      font-weight: 600;
+                      color: #2E8B57;
+                    }
+                    .net-qty {
+                      font-weight: 600;
+                      font-size: 1.1em;
+                    }
+                    .net-qty.positive {
+                      color: #28a745;
+                    }
+                    .net-qty.negative {
+                      color: #dc3545;
+                    }
+                    .net-qty.zero {
+                      color: #6c757d;
+                    }
+                    .exit-btn {
+                      background: linear-gradient(135deg, #dc3545, #c82333);
+                      color: white;
+                      border: none;
+                      padding: 8px 16px;
+                      border-radius: 20px;
+                      cursor: pointer;
+                      font-size: 12px;
+                      font-weight: 600;
+                      text-transform: uppercase;
+                      letter-spacing: 0.5px;
+                      transition: all 0.3s ease;
+                      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    }
+                    .exit-btn:hover {
+                      background: linear-gradient(135deg, #c82333, #bd2130);
+                      transform: translateY(-1px);
+                      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                    }
+                    .exit-btn:active {
+                      transform: translateY(0);
+                    }
+                    .exit-btn:disabled {
+                      background: #6c757d;
+                      cursor: not-allowed;
+                      transform: none;
+                    }
+                    .no-data {
+                      text-align: center;
+                      padding: 40px;
+                      color: #6c757d;
+                      font-size: 1.1em;
+                    }
+                    .loading {
+                      text-align: center;
+                      padding: 20px;
+                      color: #2E8B57;
+                    }
+                    .status-indicator {
+                      display: inline-block;
+                      width: 10px;
+                      height: 10px;
+                      border-radius: 50%;
+                      background: #28a745;
+                      margin-right: 8px;
+                      animation: pulse 2s infinite;
+                    }
+                    @keyframes pulse {
+                      0% { opacity: 1; }
+                      50% { opacity: 0.5; }
+                      100% { opacity: 1; }
+                    }
+                    .footer {
+                      padding: 15px 25px;
+                      background: #f8f9fa;
+                      text-align: center;
+                      color: #6c757d;
+                      font-size: 0.9em;
+                    }
                   </style>
                 </head>
                 <body>
-                  <h2>Net Positions</h2>
-                  <div class=\"meta\">Auto-refreshing every 2s. Endpoint: <code>/api/net-positions</code></div>
-                  <table>
-                    <thead id=\"thead\"></thead>
-                    <tbody id=\"tbody\"></tbody>
-                  </table>
+                  <div class=\"container\">
+                    <div class=\"header\">
+                      <h1>Net Positions Dashboard</h1>
+                      <p><span class=\"status-indicator\"></span></p>
+                    </div>
+                    <div class=\"meta\">
+                      Real-time position monitoring • Endpoint: <code>/api/net-positions</code>
+                    </div>
+                    <div class=\"table-container\">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Symbol</th>
+                            <th>Login ID</th>
+                            <th>Net Quantity</th>
+                            <th>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody id=\"tbody\">
+                          <tr><td colspan=\"4\" class=\"loading\">Loading positions...</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div class=\"footer\">
+                      <p>© 2024 Trading Dashboard • Built with Python & XTS API</p>
+                    </div>
+                  </div>
                   <script>
                     async function refresh() {
                       try {
@@ -562,28 +739,87 @@ class _DashboardHandler(BaseHTTPRequestHandler):
                         const data = await res.json();
                         const rows = data.positions || [];
                         const tbody = document.getElementById('tbody');
-                        const thead = document.getElementById('thead');
                         tbody.innerHTML = '';
+                        
                         if (rows.length > 0) {
-                          const columns = Object.keys(rows[0]);
-                          thead.innerHTML = '<tr>' + columns.map(c => `<th>${c}</th>`).join('') + '</tr>';
-                          for (const r of rows) {
+                          for (const pos of rows) {
                             const tr = document.createElement('tr');
-                            for (const c of columns) {
-                              const td = document.createElement('td');
-                              td.textContent = r[c] == null ? '' : String(r[c]);
-                              tr.appendChild(td);
-                            }
+                            const netQty = parseInt(pos.Quantity || 0);
+                            const symbol = pos.TradingSymbol || 'N/A';
+                            const loginId = pos.LoginID || 'N/A';
+                            const exchangeId = pos.ExchangeInstrumentId || 0;
+                            const tickSize = 0.05; // Default tick size
+                            
+                            let qtyClass = 'zero';
+                            if (netQty > 0) qtyClass = 'positive';
+                            else if (netQty < 0) qtyClass = 'negative';
+                            
+                            tr.innerHTML = `
+                              <td class=\"symbol\">${symbol}</td>
+                              <td>${loginId}</td>
+                              <td class=\"net-qty ${qtyClass}\">${netQty}</td>
+                              <td>
+                                <button class=\"exit-btn\" onclick=\"exitPosition('${symbol}', ${netQty}, ${exchangeId}, ${tickSize})\" 
+                                        ${netQty === 0 ? 'disabled' : ''}>
+                                  ${netQty === 0 ? 'No Position' : 'Exit'}
+                                </button>
+                              </td>
+                            `;
                             tbody.appendChild(tr);
                           }
                         } else {
-                          thead.innerHTML = '<tr><th>No data</th></tr>';
-                          tbody.innerHTML = '';
+                          tbody.innerHTML = '<tr><td colspan=\"4\" class=\"no-data\">No positions found</td></tr>';
                         }
                       } catch (e) {
-                        // ignore
+                        tbody.innerHTML = '<tr><td colspan=\"4\" class=\"no-data\">Error loading positions</td></tr>';
                       }
                     }
+                    
+                    async function exitPosition(symbol, netQty, exchangeId, tickSize) {
+                      if (netQty === 0) return;
+                      
+                      const btn = event.target;
+                      const originalText = btn.textContent;
+                      btn.disabled = true;
+                      btn.textContent = 'Exiting...';
+                      
+                      try {
+                        const response = await fetch('/api/exit-position', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            symbol: symbol,
+                            netQty: netQty,
+                            exchangeInstrumentId: exchangeId,
+                            tickSize: tickSize
+                          })
+                        });
+                        
+                        const result = await response.json();
+                        if (result.status === 'success') {
+                          btn.textContent = 'Exited';
+                          btn.style.background = '#28a745';
+                          setTimeout(() => refresh(), 1000);
+                        } else {
+                          btn.textContent = 'Error';
+                          btn.style.background = '#dc3545';
+                          setTimeout(() => {
+                            btn.textContent = originalText;
+                            btn.disabled = false;
+                            btn.style.background = '';
+                          }, 2000);
+                        }
+                      } catch (e) {
+                        btn.textContent = 'Error';
+                        btn.style.background = '#dc3545';
+                        setTimeout(() => {
+                          btn.textContent = originalText;
+                          btn.disabled = false;
+                          btn.style.background = '';
+                        }, 2000);
+                      }
+                    }
+                    
                     refresh();
                     setInterval(refresh, 2000);
                   </script>
@@ -1179,6 +1415,7 @@ def main_strategy():
                         print(message)
                         write_to_order_logs(message)
                         params['TargetValue']=None
+                        params["Trade"]=None
                     
                     if ce_bid is not None and params['StoplossValue'] is not None and ce_bid <= params['StoplossValue'] :
                         place_order(nfo_ins_id=params["Ce_Contract_Token"],symbol=params["ce_contract"],order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["Ce_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
@@ -1186,6 +1423,7 @@ def main_strategy():
                         print(message)
                         write_to_order_logs(message)
                         params['StoplossValue']=None
+                        params["Trade"]=None
                 
                 if params["PlacementType"] == "FUTURETOOPTION" and params["Flexiblity"]=="PREMIUMSELL":
                     pe_ask = get_ask(params["Pe_Contract_Token"])
@@ -1195,6 +1433,7 @@ def main_strategy():
                         print(message)
                         write_to_order_logs(message)
                         params['TargetValue']=None
+                        params["Trade"]=None
 
                     if pe_ask is not None and params['StoplossValue'] is not None and pe_ask >= params['StoplossValue'] :
                         place_order(nfo_ins_id=params["Pe_Contract_Token"],symbol=params["pe_contract"],order_quantity=params["Quantity"],order_side="BUY",price=get_ask(params["Pe_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
@@ -1202,6 +1441,7 @@ def main_strategy():
                         print(message)
                         write_to_order_logs(message)
                         params['StoplossValue']=None
+                        params["Trade"]=None
                 
                 if params["PlacementType"] == "FUTURETOOPTION" and params["Flexiblity"]=="SYNTHETIC" and params["FyersFutLtp"] >=params["TargetValue"]:
                     place_order(nfo_ins_id=params["Ce_Contract_Token"],symbol=params["ce_contract"],order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["Ce_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
@@ -1213,6 +1453,7 @@ def main_strategy():
                     print(message)
                     write_to_order_logs(message)
                     params['TargetValue']=None
+                    params["Trade"]=None
                 
                 if params["PlacementType"] == "FUTURETOOPTION" and params["Flexiblity"]=="SYNTHETIC" and params["FyersFutLtp"] <=params["StoplossValue"]:
                     place_order(nfo_ins_id=params["Ce_Contract_Token"],symbol=params["ce_contract"],order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["Ce_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
@@ -1224,6 +1465,7 @@ def main_strategy():
                     print(message)
                     write_to_order_logs(message)
                     params['StoplossValue']=None
+                    params["Trade"]=None
                 
                 if params["PlacementType"] == "FUTURETOFUTURE" and params["FyersFutLtp"] >=params["TargetValue"]:
                     place_order(nfo_ins_id=params["passfuturecontract_token"],symbol=params["passfuturecontract"],order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["passfuturecontract_token"]),unique_key=None,ticksize=params["TickSize"])
@@ -1231,6 +1473,7 @@ def main_strategy():
                     print(message)
                     write_to_order_logs(message)
                     params['TargetValue']=None
+                    params["Trade"]=None
                 
                 if params["PlacementType"] == "FUTURETOFUTURE" and params["FyersFutLtp"] <=params["StoplossValue"]:
                     place_order(nfo_ins_id=params["passfuturecontract_token"],symbol=params["passfuturecontract"],order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["passfuturecontract_token"]),unique_key=None,ticksize=params["TickSize"])
@@ -1238,6 +1481,7 @@ def main_strategy():
                     print(message)
                     write_to_order_logs(message)
                     params['StoplossValue']=None
+                    params["Trade"]=None
                 
             # stoploss and target reached sell 
 
@@ -1250,6 +1494,7 @@ def main_strategy():
                         print(message)
                         write_to_order_logs(message)
                         params['TargetValue']=None
+                        params["Trade"] == None
                     
                     if pe_bid is not None and params['StoplossValue'] is not None and pe_bid <= params['StoplossValue'] :
                         place_order(nfo_ins_id=params["Pe_Contract_Token"],symbol=params["pe_contract"],order_quantity=params["Quantity"],order_side="BUY",price=get_bid(params["Pe_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
@@ -1257,6 +1502,7 @@ def main_strategy():
                         print(message)
                         write_to_order_logs(message)
                         params['StoplossValue']=None
+                        params["Trade"]=None
                 
                 if params["PlacementType"] == "FUTURETOOPTION" and params["Flexiblity"]=="PREMIUMSELL":
                     ce_ask = get_ask(params["Ce_Contract_Token"])
@@ -1266,6 +1512,7 @@ def main_strategy():
                         print(message)
                         write_to_order_logs(message)
                         params['TargetValue']=None
+                        params["Trade"]=None
                         
                     if ce_ask is not None and params['StoplossValue'] is not None and ce_ask >= params['StoplossValue'] :
                         place_order(nfo_ins_id=params["Ce_Contract_Token"],symbol=params["ce_contract"],order_quantity=params["Quantity"],order_side="BUY",price=get_ask(params["Ce_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
@@ -1273,6 +1520,7 @@ def main_strategy():
                         print(message)
                         write_to_order_logs(message)
                         params['StoplossValue']=None
+                        params["Trade"]=None
                         
                 if params["PlacementType"] == "FUTURETOOPTION" and params["Flexiblity"]=="SYNTHETIC" and params["FyersFutLtp"] <=params["TargetValue"]:
                     place_order(nfo_ins_id=params["Ce_Contract_Token"],symbol=params["ce_contract"],order_quantity=params["Quantity"],order_side="BUY",price=get_ask(params["Ce_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
@@ -1284,6 +1532,7 @@ def main_strategy():
                     print(message)
                     write_to_order_logs(message)
                     params['TargetValue']=None
+                    params["Trade"]=None
                 
                 if params["PlacementType"] == "FUTURETOOPTION" and params["Flexiblity"]=="SYNTHETIC" and params["FyersFutLtp"] >=params["StoplossValue"]:
                     place_order(nfo_ins_id=params["Ce_Contract_Token"],symbol=params["ce_contract"],order_quantity=params["Quantity"],order_side="BUY",price=get_ask(params["Ce_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
@@ -1295,6 +1544,7 @@ def main_strategy():
                     print(message)
                     write_to_order_logs(message)
                     params['StoplossValue']=None
+                    params["Trade"]=None
                 
                 if params["PlacementType"] == "FUTURETOFUTURE" and params["FyersFutLtp"] >=params["TargetValue"]:
                     place_order(nfo_ins_id=params["passfuturecontract_token"],symbol=params["passfuturecontract"],order_quantity=params["Quantity"],order_side="BUY",price=get_bid(params["passfuturecontract_token"]),unique_key=None,ticksize=params["TickSize"])
@@ -1302,6 +1552,7 @@ def main_strategy():
                     print(message)
                     write_to_order_logs(message)
                     params['TargetValue']=None
+                    params["Trade"]=None
                 
                 if params["PlacementType"] == "FUTURETOFUTURE" and params["FyersFutLtp"] <=params["StoplossValue"]:
                     place_order(nfo_ins_id=params["passfuturecontract_token"],symbol=params["passfuturecontract"],order_quantity=params["Quantity"],order_side="BUY",price=get_ask(params["passfuturecontract_token"]),unique_key=None,ticksize=params["TickSize"])
@@ -1309,6 +1560,7 @@ def main_strategy():
                     print(message)
                     write_to_order_logs(message)
                     params['StoplossValue']=None
+                    params["Trade"]=None
                 
 
 
@@ -1354,7 +1606,7 @@ if __name__ == "__main__":
     except Exception as _e:
         print("Dashboard failed to start:", _e)
     try:
-        _start_net_positions_fetcher(poll_seconds=2)
+        _start_net_positions_fetcher(poll_seconds=30)
         print("Net positions fetcher started (2s interval)")
     except Exception as _e:
         print("Net positions fetcher failed to start:", _e)

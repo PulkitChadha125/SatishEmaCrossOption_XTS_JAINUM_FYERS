@@ -2,3 +2,7 @@ flexiblity
 1. PREMIUMBUY: on buy signal  call buy and when sell comes exit call buy put
 2. PREMIUMSELL: on buy signal PUT SELL AND WHEN SELL COMES CALL SELL 
 3. SYNTHETIC:on buy signal  call buy PUT SELL AND WHEN SELL COMES CALL SELL  buy put
+
+
+
+dashboard :http://127.0.0.1:8000 
