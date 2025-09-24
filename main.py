@@ -229,6 +229,7 @@ def get_user_settings():
         # unique_key = f"{symbol}_{OptionType}_{Strike}"
 
         for index, row in df.iterrows():
+            strategy_tag = row['StrategyTag']  # Unique identifier for each strategy
             symbol = row['Symbol']
             expiry = row['EXPIERY']  # Format: 29-05-2025
 
@@ -292,9 +293,10 @@ def get_user_settings():
 
 
             symbol_dict = {
+                "StrategyTag": strategy_tag,  # Add StrategyTag to the dictionary
                 "Symbol": symbol, 
                 "OptionType": row['OptionType'],
-                "unique_key": f"{symbol}_{row['OptionType']}_",
+                "unique_key": strategy_tag,  # Use StrategyTag as unique key instead of symbol-based key
                 "Expiry": expiry,   
                 "TickSize": tick_size,  # Add tick size to symbol dictionary
                 "lot_size": lot_size,
@@ -335,7 +337,7 @@ def get_user_settings():
 
             }
 
-            result_dict[symbol_dict["unique_key"]] = symbol_dict
+            result_dict[strategy_tag] = symbol_dict
 
            
 
@@ -876,29 +878,29 @@ def main_strategy():
                         if params["Flexiblity"]=="PREMIUMBUY":
                             place_order(nfo_ins_id=params["Ce_Contract_Token"],symbol=params["ce_contract"],order_quantity=params["Quantity"],
                             order_side="SELL",price=get_bid(params["Ce_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
-                            message = f"{TIMESTAMP} [EXIT] Square up time reached {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                            message = f"{TIMESTAMP} [EXIT] Square up time reached {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                             print(message)
                             write_to_order_logs(message)
                         
                         if params["Flexiblity"]=="PREMIUMSELL":
                             place_order(nfo_ins_id=params["Pe_Contract_Token"],symbol=params["pe_contract"],order_quantity=params["Quantity"],order_side="BUY",price=get_ask(params["Pe_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
-                            message = f"{TIMESTAMP} [EXIT]  Square up time reached {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                            message = f"{TIMESTAMP} [EXIT]  Square up time reached {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                             print(message)
                             write_to_order_logs(message)
                         
                         if params["Flexiblity"]=="SYNTHETIC":
                             place_order(nfo_ins_id=params["Ce_Contract_Token"],symbol=params["ce_contract"],order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["Ce_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
                             place_order(nfo_ins_id=params["Pe_Contract_Token"],symbol=params["pe_contract"],order_quantity=params["Quantity"],order_side="BUY",price=get_ask(params["Pe_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
-                            message = f"{TIMESTAMP} [EXIT]  Square up time reached  {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                            message = f"{TIMESTAMP} [EXIT]  Square up time reached  {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                             print(message)
                             write_to_order_logs(message)
-                            message = f"{TIMESTAMP} [EXIT]  Square up time reached  {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                            message = f"{TIMESTAMP} [EXIT]  Square up time reached  {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                             print(message)
                             write_to_order_logs(message)
 
                     if params["PlacementType"] == "FUTURETOFUTURE":
                         place_order(nfo_ins_id=params["passfuturecontract_token"],symbol=params["passfuturecontract"],order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["passfuturecontract_token"]),unique_key=None,ticksize=params["TickSize"])
-                        message = f"{TIMESTAMP} Sqaure up executed for {params['Quantity']} @ {params['FyersFutLtp']} {params['passfuturecontract']} , Stoploss: {params['StoplossValue']} , Target: {params['TargetValue']}"
+                        message = f"{TIMESTAMP} Sqaure up executed for {params['Quantity']} @ {params['FyersFutLtp']} {params['passfuturecontract']} , Stoploss: {params['StoplossValue']} , Target: {params['TargetValue']} [{params['StrategyTag']}]"
                         print(message)
                         write_to_order_logs(message)
                 
@@ -906,29 +908,29 @@ def main_strategy():
                     if params["PlacementType"] == "FUTURETOOPTION":
                         if params["Flexiblity"]=="PREMIUMBUY":
                             place_order(nfo_ins_id=params["Pe_Contract_Token"],symbol=params["pe_contract"],order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["Pe_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
-                            message = f"{TIMESTAMP} [EXIT] Square up time reached {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                            message = f"{TIMESTAMP} [EXIT] Square up time reached {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                             print(message)
                             write_to_order_logs(message)
                         
                         if params["Flexiblity"]=="PREMIUMSELL":
                             place_order(nfo_ins_id=params["Ce_Contract_Token"],symbol=params["ce_contract"],order_quantity=params["Quantity"],order_side="BUY",price=get_ask(params["Ce_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
-                            message = f"{TIMESTAMP} [EXIT] Square up time reached {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                            message = f"{TIMESTAMP} [EXIT] Square up time reached {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                             print(message)
                             write_to_order_logs(message)
                         
                         if params["Flexiblity"]=="SYNTHETIC":
                             place_order(nfo_ins_id=params["Pe_Contract_Token"],symbol=params["pe_contract"],order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["Pe_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
                             place_order(nfo_ins_id=params["Ce_Contract_Token"],symbol=params["ce_contract"],order_quantity=params["Quantity"],order_side="BUY",price=get_ask(params["Ce_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
-                            message = f"{TIMESTAMP} [EXIT] Square up time reached {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                            message = f"{TIMESTAMP} [EXIT] Square up time reached {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                             print(message)
                             write_to_order_logs(message)
-                            message = f"{TIMESTAMP} [EXIT] Square up time reached {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                            message = f"{TIMESTAMP} [EXIT] Square up time reached {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                             print(message)
                             write_to_order_logs(message)
 
                     if params["PlacementType"] == "FUTURETOFUTURE":
                         place_order(nfo_ins_id=params["passfuturecontract_token"],symbol=params["passfuturecontract"],order_quantity=params["Quantity"],order_side="BUY",price=get_ask(params["passfuturecontract_token"]),unique_key=None,ticksize=params["TickSize"])
-                        message = f"{TIMESTAMP} Sqaure up executed for {params['Quantity']} @ {params['FyersFutLtp']} {params['passfuturecontract']} , Stoploss: {params['StoplossValue']} , Target: {params['TargetValue']}"
+                        message = f"{TIMESTAMP} Sqaure up executed for {params['Quantity']} @ {params['FyersFutLtp']} {params['passfuturecontract']} , Stoploss: {params['StoplossValue']} , Target: {params['TargetValue']} [{params['StrategyTag']}]"
                         print(message)
                         write_to_order_logs(message)
 
@@ -944,7 +946,7 @@ def main_strategy():
             # print("bid: ",get_bid(53001))
 
             print(
-                f"\n[STATUS UPDATE] {params['Symbol']} | PlacementType={params['PlacementType']} | Flexibility={params['Flexiblity']}\n"
+                f"\n[STATUS UPDATE] {params['StrategyTag']} | {params['Symbol']} | PlacementType={params['PlacementType']} | Flexibility={params['Flexiblity']}\n"
                 f"   Trade State     : {params.get('Trade')}\n"
                 f"   Future LTP      : {params.get('FyersFutLtp')}\n"
                 f"   CE Token        : {params.get('Ce_Contract_Token')} | CE LTP: {get_ltp(params['Ce_Contract_Token']) if params.get('Ce_Contract_Token') else 'NA'}\n"
@@ -1076,7 +1078,7 @@ def main_strategy():
 
                 
                 params["CandleTimestamp"] = lastcandletime
-                message = f"{TIMESTAMP} [ENTRY] Buy in future Contract {params['Symbol']} {params['FyersFutLtp']} "
+                message = f"{TIMESTAMP} [ENTRY] Buy in future Contract {params['Symbol']} {params['FyersFutLtp']} [{params['StrategyTag']}]"
                 print(message)
                 write_to_order_logs(message)
                 
@@ -1085,7 +1087,7 @@ def main_strategy():
                     if params["Flexiblity"]=="PREMIUMBUY":
                         if params["Trade"] == "SELL":
                             place_order(nfo_ins_id=params["Pe_Contract_Token"],symbol=params["pe_contract"],order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["Pe_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
-                            message = f"{TIMESTAMP} [EXIT] Sell {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                            message = f"{TIMESTAMP} [EXIT] Sell {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                             print(message)
                             write_to_order_logs(message)
 
@@ -1114,14 +1116,14 @@ def main_strategy():
                         params["TargetValue"] = ce_ask + params["Target"]
                         
                         place_order(nfo_ins_id=params["Ce_Contract_Token"],symbol=params["ce_contract"],order_quantity=params["Quantity"],order_side="BUY",price=ce_ask,unique_key=None,ticksize=params["option_tick_size"])
-                        message = f"{TIMESTAMP} [ENTRY] Buy {params['ce_contract']} {params['Quantity']} @ {ce_ask} ,flexiblity= {params['Flexiblity']} "
+                        message = f"{TIMESTAMP} [ENTRY] Buy {params['ce_contract']} {params['Quantity']} @ {ce_ask} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                         print(message)
                         write_to_order_logs(message)
                     
                     if params["Flexiblity"]=="PREMIUMSELL":
                         if params["Trade"] == "SELL":
                             place_order(nfo_ins_id=params["Ce_Contract_Token"],symbol=params["ce_contract"],order_quantity=params["Quantity"],order_side="BUY",price=get_ask(params["Ce_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])  
-                            message = f"{TIMESTAMP} [EXIT] Buy {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                            message = f"{TIMESTAMP} [EXIT] Buy {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                             print(message)
                             write_to_order_logs(message)
 
@@ -1149,7 +1151,7 @@ def main_strategy():
                         params["TargetValue"] = pe_bid - params["Target"]
                         
                         place_order(nfo_ins_id=params["Pe_Contract_Token"],symbol=params["pe_contract"],order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["Pe_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
-                        message = f"{TIMESTAMP} [ENTRY] Sell {params['pe_contract']} {params['Quantity']} @ {pe_bid} ,flexiblity= {params['Flexiblity']} "
+                        message = f"{TIMESTAMP} [ENTRY] Sell {params['pe_contract']} {params['Quantity']} @ {pe_bid} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                         print(message)
                         write_to_order_logs(message)
 
@@ -1157,10 +1159,10 @@ def main_strategy():
                         if params["Trade"] == "SELL":
                             place_order(nfo_ins_id=params["Ce_Contract_Token"],symbol=params["ce_contract"],order_quantity=params["Quantity"],order_side="BUY",price=get_ask(params["Ce_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
                             place_order(nfo_ins_id=params["Pe_Contract_Token"],symbol=params["pe_contract"],order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["Pe_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
-                            message = f"{TIMESTAMP} [EXIT] Buy {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                            message = f"{TIMESTAMP} [EXIT] Buy {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                             print(message)
                             write_to_order_logs(message)
-                            message = f"{TIMESTAMP} [EXIT] Sell {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                            message = f"{TIMESTAMP} [EXIT] Sell {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                             print(message)
                             write_to_order_logs(message)
 
@@ -1208,17 +1210,17 @@ def main_strategy():
                         params["StoplossValue"] = params["FyersFutLtp"] - params["Stoploss"]
                         params["TargetValue"] = params["FyersFutLtp"] + params["Target"]
 
-                        message = f"{TIMESTAMP} [ENTRY] Buy {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                        message = f"{TIMESTAMP} [ENTRY] Buy {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                         print(message)
                         write_to_order_logs(message)
-                        message = f"{TIMESTAMP} [ENTRY] Sell {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                        message = f"{TIMESTAMP} [ENTRY] Sell {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                         print(message)
                         write_to_order_logs(message)
 
                 if params["PlacementType"] == "FUTURETOFUTURE":
                     if params["Trade"] == "SELL":
                         place_order(nfo_ins_id=params["passfuturecontract_token"],symbol=params["passfuturecontract"],order_quantity=params["Quantity"],order_side="BUY",price=get_ask(params["passfuturecontract_token"]),unique_key=None,ticksize=params["TickSize"])
-                        message = f"{TIMESTAMP} [EXIT] Buy {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                        message = f"{TIMESTAMP} [EXIT] Buy {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                         print(message)
                         write_to_order_logs(message)
 
@@ -1227,7 +1229,7 @@ def main_strategy():
                     params["StoplossValue"] = params["FyersFutLtp"] - params["Stoploss"]
                     params["TargetValue"] = params["FyersFutLtp"] + params["Target"]
                     place_order(nfo_ins_id=params["passfuturecontract_token"],symbol=params["passfuturecontract"],order_quantity=params["Quantity"],order_side="BUY",price=get_ask(params["passfuturecontract_token"]),unique_key=None,ticksize=params["TickSize"])
-                    message = f"{TIMESTAMP} [ENTRY] Buy {params['Quantity']} @ {params['FyersFutLtp']} {params['passfuturecontract']} , Stoploss: {params['StoplossValue']} , Target: {params['TargetValue']}"
+                    message = f"{TIMESTAMP} [ENTRY] Buy {params['Quantity']} @ {params['FyersFutLtp']} {params['passfuturecontract']} , Stoploss: {params['StoplossValue']} , Target: {params['TargetValue']} [{params['StrategyTag']}]"
                     print(message)
                     write_to_order_logs(message)
                 
@@ -1246,7 +1248,7 @@ def main_strategy():
                 
                 params["CandleTimestamp"] = lastcandletime
 
-                message = f"{TIMESTAMP} [ENTRY] Sell in future Contract {params['Symbol']} {params['FyersFutLtp']} "
+                message = f"{TIMESTAMP} [ENTRY] Sell in future Contract {params['Symbol']} {params['FyersFutLtp']} [{params['StrategyTag']}]"
                 print(message)
                 write_to_order_logs(message)
                 
@@ -1254,7 +1256,7 @@ def main_strategy():
                     if params["Flexiblity"]=="PREMIUMBUY":
                         if params["Trade"] == "BUY":
                             place_order(nfo_ins_id=params["Ce_Contract_Token"],symbol=params["ce_contract"],order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["Ce_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
-                            message = f"{TIMESTAMP} [EXIT] Sell {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                            message = f"{TIMESTAMP} [EXIT] Sell {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                             print(message)
                             write_to_order_logs(message)
                         
@@ -1283,14 +1285,14 @@ def main_strategy():
                         params["TargetValue"] = pe_ask + params["Target"]
                         
                         place_order(nfo_ins_id=params["Pe_Contract_Token"],symbol=params["pe_contract"],order_quantity=params["Quantity"],order_side="BUY",price=get_ask(params["Pe_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
-                        message = f"{TIMESTAMP} [ENTRY] Buy {params['pe_contract']} {params['Quantity']} @ {pe_ask} ,flexiblity= {params['Flexiblity']} "
+                        message = f"{TIMESTAMP} [ENTRY] Buy {params['pe_contract']} {params['Quantity']} @ {pe_ask} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                         print(message)
                         write_to_order_logs(message)
                     
                     if params["Flexiblity"]=="PREMIUMSELL":
                         if params["Trade"] == "BUY":
                             place_order(nfo_ins_id=params["Pe_Contract_Token"],symbol=params["pe_contract"],order_quantity=params["Quantity"],order_side="BUY",price=get_ask(params["Pe_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
-                            message = f"{TIMESTAMP} [EXIT] Buy {params['pe_contract']} {params['Quantity']} @ {get_ask(params["Pe_Contract_Token"])} ,flexiblity= {params['Flexiblity']} "
+                            message = f"{TIMESTAMP} [EXIT] Buy {params['pe_contract']} {params['Quantity']} @ {get_ask(params["Pe_Contract_Token"])} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                             print(message)
                             write_to_order_logs(message)
                         
@@ -1318,7 +1320,7 @@ def main_strategy():
                         params["TargetValue"] = ce_bid - params["Target"]
                         
                         place_order(nfo_ins_id=params["Ce_Contract_Token"],symbol=params["ce_contract"],order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["Ce_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
-                        message = f"{TIMESTAMP} [ENTRY] Sell {params['ce_contract']} {params['Quantity']} @ {ce_bid} ,flexiblity= {params['Flexiblity']} "
+                        message = f"{TIMESTAMP} [ENTRY] Sell {params['ce_contract']} {params['Quantity']} @ {ce_bid} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                         print(message)
                         write_to_order_logs(message)
                     
@@ -1326,10 +1328,10 @@ def main_strategy():
                         if params["Trade"] == "BUY":
                             place_order(nfo_ins_id=params["Ce_Contract_Token"],symbol=params["ce_contract"],order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["Ce_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
                             place_order(nfo_ins_id=params["Pe_Contract_Token"],symbol=params["pe_contract"],order_quantity=params["Quantity"],order_side="BUY",price=get_ask(params["Pe_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
-                            message = f"{TIMESTAMP} [EXIT] Sell {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                            message = f"{TIMESTAMP} [EXIT] Sell {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                             print(message)
                             write_to_order_logs(message)
-                            message = f"{TIMESTAMP} [EXIT] Buy {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                            message = f"{TIMESTAMP} [EXIT] Buy {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                             print(message)
                             write_to_order_logs(message)
 
@@ -1377,10 +1379,10 @@ def main_strategy():
                         
                         params["StoplossValue"] = params["FyersFutLtp"] + params["Stoploss"]
                         params["TargetValue"] = params["FyersFutLtp"] - params["Target"]
-                        message = f"{TIMESTAMP} [ENTRY] Sell {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                        message = f"{TIMESTAMP} [ENTRY] Sell {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                         print(message)
                         write_to_order_logs(message)
-                        message = f"{TIMESTAMP} [ENTRY] Buy {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                        message = f"{TIMESTAMP} [ENTRY] Buy {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                         print(message)
                         write_to_order_logs(message)
 
@@ -1389,7 +1391,7 @@ def main_strategy():
                 if params["PlacementType"] == "FUTURETOFUTURE":
                     if params["Trade"] == "BUY":
                         place_order(nfo_ins_id=params["passfuturecontract_token"],symbol=params["passfuturecontract"],order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["passfuturecontract_token"]),unique_key=None,ticksize=params["TickSize"])
-                        message = f"{TIMESTAMP} [EXIT] Sell {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                        message = f"{TIMESTAMP} [EXIT] Sell {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                         print(message)
                         write_to_order_logs(message)
 
@@ -1398,7 +1400,7 @@ def main_strategy():
                     params["StoplossValue"] = params["FyersFutLtp"] + params["Stoploss"]
                     params["TargetValue"] = params["FyersFutLtp"] - params["Target"]
                     place_order(nfo_ins_id=params["passfuturecontract_token"],symbol=params["passfuturecontract"],order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["passfuturecontract_token"]),unique_key=None,ticksize=params["TickSize"])
-                    message = f"{TIMESTAMP} Sell {params['Quantity']} @ {params['FyersFutLtp']} {passfuturecontract} , Stoploss: {params['StoplossValue']} , Target: {params['TargetValue']}"
+                    message = f"{TIMESTAMP} Sell {params['Quantity']} @ {params['FyersFutLtp']} {passfuturecontract} , Stoploss: {params['StoplossValue']} , Target: {params['TargetValue']} [{params['StrategyTag']}]"
                     print(message)
                     write_to_order_logs(message)
                 
@@ -1411,7 +1413,7 @@ def main_strategy():
                     ce_bid = get_bid(params["Ce_Contract_Token"])
                     if ce_bid is not None and params['TargetValue'] is not None and ce_bid >= params['TargetValue'] :
                         place_order(nfo_ins_id=params["Ce_Contract_Token"],symbol=params["ce_contract"],order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["Ce_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
-                        message = f"{TIMESTAMP} [EXIT] Target reached {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                        message = f"{TIMESTAMP} [EXIT] Target reached {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                         print(message)
                         write_to_order_logs(message)
                         params['TargetValue']=None
@@ -1419,7 +1421,7 @@ def main_strategy():
                     
                     if ce_bid is not None and params['StoplossValue'] is not None and ce_bid <= params['StoplossValue'] :
                         place_order(nfo_ins_id=params["Ce_Contract_Token"],symbol=params["ce_contract"],order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["Ce_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
-                        message = f"{TIMESTAMP} [EXIT] Stoploss reached {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                        message = f"{TIMESTAMP} [EXIT] Stoploss reached {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                         print(message)
                         write_to_order_logs(message)
                         params['StoplossValue']=None
@@ -1429,7 +1431,7 @@ def main_strategy():
                     pe_ask = get_ask(params["Pe_Contract_Token"])
                     if pe_ask is not None and params['TargetValue'] is not None and pe_ask <= params['TargetValue'] :
                         place_order(nfo_ins_id=params["Pe_Contract_Token"],symbol=params["pe_contract"],order_quantity=params["Quantity"],order_side="BUY",price=get_ask(params["Pe_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
-                        message = f"{TIMESTAMP} [EXIT] Target reached {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                        message = f"{TIMESTAMP} [EXIT] Target reached {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                         print(message)
                         write_to_order_logs(message)
                         params['TargetValue']=None
@@ -1437,7 +1439,7 @@ def main_strategy():
 
                     if pe_ask is not None and params['StoplossValue'] is not None and pe_ask >= params['StoplossValue'] :
                         place_order(nfo_ins_id=params["Pe_Contract_Token"],symbol=params["pe_contract"],order_quantity=params["Quantity"],order_side="BUY",price=get_ask(params["Pe_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
-                        message = f"{TIMESTAMP} [EXIT] Stoploss reached {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                        message = f"{TIMESTAMP} [EXIT] Stoploss reached {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                         print(message)
                         write_to_order_logs(message)
                         params['StoplossValue']=None
@@ -1446,10 +1448,10 @@ def main_strategy():
                 if params["PlacementType"] == "FUTURETOOPTION" and params["Flexiblity"]=="SYNTHETIC" and params["FyersFutLtp"] >=params["TargetValue"]:
                     place_order(nfo_ins_id=params["Ce_Contract_Token"],symbol=params["ce_contract"],order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["Ce_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
                     place_order(nfo_ins_id=params["Pe_Contract_Token"] ,symbol=params["pe_contract"] ,order_quantity=params["Quantity"],order_side="BUY",price=get_ask(params["Pe_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
-                    message = f"{TIMESTAMP} [EXIT] Target reached {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                    message = f"{TIMESTAMP} [EXIT] Target reached {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                     print(message)
                     write_to_order_logs(message)
-                    message = f"{TIMESTAMP} [EXIT] Target reached {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                    message = f"{TIMESTAMP} [EXIT] Target reached {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                     print(message)
                     write_to_order_logs(message)
                     params['TargetValue']=None
@@ -1458,10 +1460,10 @@ def main_strategy():
                 if params["PlacementType"] == "FUTURETOOPTION" and params["Flexiblity"]=="SYNTHETIC" and params["FyersFutLtp"] <=params["StoplossValue"]:
                     place_order(nfo_ins_id=params["Ce_Contract_Token"],symbol=params["ce_contract"],order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["Ce_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
                     place_order(nfo_ins_id=params["Pe_Contract_Token"] ,symbol=params["pe_contract"] ,order_quantity=params["Quantity"],order_side="BUY",price=get_ask(params["Pe_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
-                    message = f"{TIMESTAMP} [EXIT] Stoploss reached {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                    message = f"{TIMESTAMP} [EXIT] Stoploss reached {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                     print(message)
                     write_to_order_logs(message)
-                    message = f"{TIMESTAMP} [EXIT] Stoploss reached {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                    message = f"{TIMESTAMP} [EXIT] Stoploss reached {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                     print(message)
                     write_to_order_logs(message)
                     params['StoplossValue']=None
@@ -1469,7 +1471,7 @@ def main_strategy():
                 
                 if params["PlacementType"] == "FUTURETOFUTURE" and params["FyersFutLtp"] >=params["TargetValue"]:
                     place_order(nfo_ins_id=params["passfuturecontract_token"],symbol=params["passfuturecontract"],order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["passfuturecontract_token"]),unique_key=None,ticksize=params["TickSize"])
-                    message = f"{TIMESTAMP} {params['Symbol']} Target reached. SELL {params['Quantity']} @ {params['FyersFutLtp']}"
+                    message = f"{TIMESTAMP} {params['Symbol']} Target reached. SELL {params['Quantity']} @ {params['FyersFutLtp']} [{params['StrategyTag']}]"
                     print(message)
                     write_to_order_logs(message)
                     params['TargetValue']=None
@@ -1477,7 +1479,7 @@ def main_strategy():
                 
                 if params["PlacementType"] == "FUTURETOFUTURE" and params["FyersFutLtp"] <=params["StoplossValue"]:
                     place_order(nfo_ins_id=params["passfuturecontract_token"],symbol=params["passfuturecontract"],order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["passfuturecontract_token"]),unique_key=None,ticksize=params["TickSize"])
-                    message = f"{TIMESTAMP} {params['Symbol']} Stoploss reached. Sell {params['Quantity']} @ {params['FyersFutLtp']}"
+                    message = f"{TIMESTAMP} {params['Symbol']} Stoploss reached. Sell {params['Quantity']} @ {params['FyersFutLtp']} [{params['StrategyTag']}]"
                     print(message)
                     write_to_order_logs(message)
                     params['StoplossValue']=None
@@ -1490,7 +1492,7 @@ def main_strategy():
                     pe_bid = get_bid(params["Pe_Contract_Token"])
                     if pe_bid is not None and params['TargetValue'] is not None and pe_bid >= params['TargetValue'] :
                         place_order(nfo_ins_id=params["Pe_Contract_Token"],symbol=params["pe_contract"],order_quantity=params["Quantity"],order_side="BUY",price=get_bid(params["Pe_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
-                        message = f"{TIMESTAMP} [EXIT] Target reached {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                        message = f"{TIMESTAMP} [EXIT] Target reached {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                         print(message)
                         write_to_order_logs(message)
                         params['TargetValue']=None
@@ -1498,7 +1500,7 @@ def main_strategy():
                     
                     if pe_bid is not None and params['StoplossValue'] is not None and pe_bid <= params['StoplossValue'] :
                         place_order(nfo_ins_id=params["Pe_Contract_Token"],symbol=params["pe_contract"],order_quantity=params["Quantity"],order_side="BUY",price=get_bid(params["Pe_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
-                        message = f"{TIMESTAMP} [EXIT] Stoploss reached {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                        message = f"{TIMESTAMP} [EXIT] Stoploss reached {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                         print(message)
                         write_to_order_logs(message)
                         params['StoplossValue']=None
@@ -1508,7 +1510,7 @@ def main_strategy():
                     ce_ask = get_ask(params["Ce_Contract_Token"])
                     if ce_ask is not None and params['TargetValue'] is not None and ce_ask <= params['TargetValue'] :
                         place_order(nfo_ins_id=params["Ce_Contract_Token"],symbol=params["ce_contract"],order_quantity=params["Quantity"],order_side="BUY",price=get_ask(params["Ce_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
-                        message = f"{TIMESTAMP} [EXIT] Target reached {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                        message = f"{TIMESTAMP} [EXIT] Target reached {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                         print(message)
                         write_to_order_logs(message)
                         params['TargetValue']=None
@@ -1516,7 +1518,7 @@ def main_strategy():
                         
                     if ce_ask is not None and params['StoplossValue'] is not None and ce_ask >= params['StoplossValue'] :
                         place_order(nfo_ins_id=params["Ce_Contract_Token"],symbol=params["ce_contract"],order_quantity=params["Quantity"],order_side="BUY",price=get_ask(params["Ce_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
-                        message = f"{TIMESTAMP} [EXIT] Stoploss reached {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                        message = f"{TIMESTAMP} [EXIT] Stoploss reached {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                         print(message)
                         write_to_order_logs(message)
                         params['StoplossValue']=None
@@ -1525,10 +1527,10 @@ def main_strategy():
                 if params["PlacementType"] == "FUTURETOOPTION" and params["Flexiblity"]=="SYNTHETIC" and params["FyersFutLtp"] <=params["TargetValue"]:
                     place_order(nfo_ins_id=params["Ce_Contract_Token"],symbol=params["ce_contract"],order_quantity=params["Quantity"],order_side="BUY",price=get_ask(params["Ce_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
                     place_order(nfo_ins_id=params["Pe_Contract_Token"] ,symbol=params["pe_contract"] ,order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["Pe_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
-                    message = f"{TIMESTAMP} [EXIT] Target reached {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                    message = f"{TIMESTAMP} [EXIT] Target reached {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                     print(message)
                     write_to_order_logs(message)
-                    message = f"{TIMESTAMP} [EXIT] Target reached {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                    message = f"{TIMESTAMP} [EXIT] Target reached {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                     print(message)
                     write_to_order_logs(message)
                     params['TargetValue']=None
@@ -1537,10 +1539,10 @@ def main_strategy():
                 if params["PlacementType"] == "FUTURETOOPTION" and params["Flexiblity"]=="SYNTHETIC" and params["FyersFutLtp"] >=params["StoplossValue"]:
                     place_order(nfo_ins_id=params["Ce_Contract_Token"],symbol=params["ce_contract"],order_quantity=params["Quantity"],order_side="BUY",price=get_ask(params["Ce_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
                     place_order(nfo_ins_id=params["Pe_Contract_Token"] ,symbol=params["pe_contract"] ,order_quantity=params["Quantity"],order_side="SELL",price=get_bid(params["Pe_Contract_Token"]),unique_key=None,ticksize=params["option_tick_size"])
-                    message = f"{TIMESTAMP} [EXIT] Stoploss reached {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                    message = f"{TIMESTAMP} [EXIT] Stoploss reached {params['ce_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                     print(message)
                     write_to_order_logs(message)
-                    message = f"{TIMESTAMP} [EXIT] Stoploss reached {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} "
+                    message = f"{TIMESTAMP} [EXIT] Stoploss reached {params['pe_contract']} {params['Quantity']} @ {params['FyersFutLtp']} ,flexiblity= {params['Flexiblity']} [{params['StrategyTag']}]"
                     print(message)
                     write_to_order_logs(message)
                     params['StoplossValue']=None
@@ -1548,7 +1550,7 @@ def main_strategy():
                 
                 if params["PlacementType"] == "FUTURETOFUTURE" and params["FyersFutLtp"] >=params["TargetValue"]:
                     place_order(nfo_ins_id=params["passfuturecontract_token"],symbol=params["passfuturecontract"],order_quantity=params["Quantity"],order_side="BUY",price=get_bid(params["passfuturecontract_token"]),unique_key=None,ticksize=params["TickSize"])
-                    message = f"{TIMESTAMP} {params['Symbol']} Target reached. Buy {params['Quantity']} @ {params['FyersFutLtp']}"
+                    message = f"{TIMESTAMP} {params['Symbol']} Target reached. Buy {params['Quantity']} @ {params['FyersFutLtp']} [{params['StrategyTag']}]"
                     print(message)
                     write_to_order_logs(message)
                     params['TargetValue']=None
@@ -1556,7 +1558,7 @@ def main_strategy():
                 
                 if params["PlacementType"] == "FUTURETOFUTURE" and params["FyersFutLtp"] <=params["StoplossValue"]:
                     place_order(nfo_ins_id=params["passfuturecontract_token"],symbol=params["passfuturecontract"],order_quantity=params["Quantity"],order_side="BUY",price=get_ask(params["passfuturecontract_token"]),unique_key=None,ticksize=params["TickSize"])
-                    message = f"{TIMESTAMP} {params['Symbol']} Stoploss reached. BUY {params['Quantity']} @ {params['FyersFutLtp']}"
+                    message = f"{TIMESTAMP} {params['Symbol']} Stoploss reached. BUY {params['Quantity']} @ {params['FyersFutLtp']} [{params['StrategyTag']}]"
                     print(message)
                     write_to_order_logs(message)
                     params['StoplossValue']=None
